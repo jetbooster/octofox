@@ -1,0 +1,13 @@
+[Unit]
+Description=Octofox
+After=network-online.target
+
+[Service]
+Restart=on-failure
+WorkingDirectory=/home/ubuntu/workspace/octopus-foxcloud-connector
+Type=simple
+User=ubuntu
+ExecStart=/home/ubuntu/.bun/bin/bun run src/index.ts
+
+[Install]
+WantedBy=multi-user.target
