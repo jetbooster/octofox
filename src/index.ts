@@ -1,4 +1,4 @@
-import { addDays } from "date-fns";
+import { addDays, addMinutes, startOfDay } from "date-fns";
 import schedule from 'node-schedule';
 import winston from "winston";
 import FoxCloud, { BatteryChargeBody } from "./foxCloud";
@@ -59,13 +59,14 @@ const rangesToBatterySetting = (first: [string, string], second: [string, string
 }
 
 const main = async () => {
-  const { firstRange, secondRange } = await getBestRangesForDate(addDays(new Date(), 1));
+  const { firstRange, secondRange } = await getBestRangesForDate(addDays(new Date(), 0));
 
   winston.debug("ranges", firstRange, secondRange);
 
   const batteryLevel = await FoxCloud.getCurrentBatteryLevel();
   winston.debug("battery level %d", batteryLevel);
 
+  await FoxCloud.setCurrentBatteryChargeSettings(rangesToBatterySetting(firstRange, secondRange));
 }
 
 const checkDone = async () => {
@@ -91,7 +92,11 @@ schedule.scheduleJob("0 0 23 * * *", async () => {
 
   const start2 = parseIsoNoMilliSeconds(secondRange[0])
   const end2 = parseIsoNoMilliSeconds(secondRange[1])
-  await FoxCloud.setCurrentBatteryChargeSettings(rangesToBatterySetting(firstRange, secondRange));
+  // force charge settings are cleared at midnight
+  schedule.scheduleJob("update charge settings", addMinutes(startOfDay(addDays(new Date(), 1)), 30), async () => {
+    winston.info("Pushing settings to Foxcloud")
+    await FoxCloud.setCurrentBatteryChargeSettings(rangesToBatterySetting(firstRange, secondRange));
+  })
   // we may be able to stop the second charge early, 
   // since if the battery runs out overnight, the prices are fine anyway.
   schedule.scheduleJob("checkDone", { start: start2, end: end2, rule: "*/5 * * * * *" }, checkDone)

@@ -97,6 +97,15 @@ const getCurrentBatteryChargeSettings = async () => {
   return parsed;
 }
 
+const getSchedulerSettings = async () => {
+  const res = await fetchAndSign(`/op/v0/device/scheduler/get/flag`, {
+    method: 'POST',
+    body: JSON.stringify({ deviceSN: FOXCLOUD_SN })
+  });
+  const parsed = await res.json();
+  return parsed;
+}
+
 const setCurrentBatteryChargeSettings = async (body: Partial<BatteryChargeBody>) => {
   const res = await fetchAndSign("/op/v0/device/battery/forceChargeTime/set", {
     method: 'POST',
@@ -126,5 +135,10 @@ export default {
   getDevices,
   getCurrentBatteryChargeSettings,
   setCurrentBatteryChargeSettings,
-  getCurrentBatteryLevel
+  getCurrentBatteryLevel,
+  getSchedulerSettings,
+}
+
+if (Bun.main) {
+  getCurrentBatteryChargeSettings().then(console.log);
 }
